@@ -33,7 +33,7 @@
         .left-panel {
             flex: 1.1;
             position: relative;
-            background: #1a56db;
+            background: #1a6b3a;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -44,7 +44,7 @@
 
         .left-bg {
             position: absolute; inset: 0;
-            background: url('https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/University_of_Caloocan_City_-_South_Campus.jpg/1280px-University_of_Caloocan_City_-_South_Campus.jpg') center/cover no-repeat;
+            background: url('{{ asset("images/ucc-background.jpg") }}') center/cover no-repeat;
             opacity: 0.15;
         }
 
@@ -89,7 +89,7 @@
             color: #fff;
         }
 
-        .left-title span { color: #93c5fd; }
+        .left-title span { color: #6ed694; }
 
         .left-subtitle {
             font-size: 13px;
@@ -360,14 +360,14 @@
             <div class="brand-icon"><i class="ti ti-package"></i></div>
             <div>
                 <div class="brand-name">UCC-CS</div>
-                <div class="brand-sub">Consumable Management System</div>
+                <div class="brand-sub">Consumable System</div>
             </div>
         </div>
 
         <div class="welcome-title">Get Started</div>
         <p class="welcome-desc">
             Access your consumables dashboard or create a new account
-            to begin managing university supplies.
+            to begin requesting university supplies.
         </p>
 
         <div class="action-label">Choose an option</div>
@@ -397,7 +397,7 @@
 
         <div class="secure-note">
             <i class="ti ti-shield-check" style="color:#1a56db; font-size:13px;"></i>
-            Secure System • v1.0
+            Secure System • v2.7.1
         </div>
 
         <div class="footer-note">
@@ -414,7 +414,7 @@
             <div class="modal-title"><i class="ti ti-users"></i> Meet the Developers</div>
             <button class="modal-close" onclick="document.getElementById('dev-modal').classList.remove('open')"><i class="ti ti-x"></i></button>
         </div>
-        <p class="modal-sub">The team behind the UCC Consumable Management System.</p>
+        <p class="modal-sub">The team behind the UCC Consumable System.</p>
 
         <div class="dev-grid">
             <div class="dev-card">

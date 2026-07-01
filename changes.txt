@@ -1,0 +1,12 @@
+Improvised UCC - Consumable System
+
+July 1, 2026
+
+- Initial development of UCC - CS
+- Welcome page implemented
+
+July 2, 2026 - Part I
+
+- Login page, Register page, Forgot Password page implemented
+- Account created from this system can only logged in CS (still need to fix error encountered)
+- Register page updated, removed the generated password in Step 3, instead... receiving the system-generated password in registered email
