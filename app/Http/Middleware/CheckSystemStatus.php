@@ -10,25 +10,31 @@ class CheckSystemStatus
 {
     public function handle(Request $request, Closure $next)
     {
-        // Skip for admin login route and admin/superadmin users
-        if ($request->routeIs('admin.login*') || $request->routeIs('system.*')) {
+        // Always allow: public pages, login, register, forgot password, OTP
+        if ($request->routeIs(
+            'home', 'login', 'logout',
+            'register', 'register.*',
+            'password.*',
+            'account.reactivate', 'account.cancel-reactivate'
+        )) {
             return $next($request);
         }
 
-        if (SystemStatus::isDown()) {
+        if (SystemStatus::isDown('cs')) {
             $user = auth()->user();
 
-            // Admin and superadmin bypass maintenance
+            // Admin and Super Admin bypass maintenance
             if ($user && in_array($user->role, ['admin', 'superadmin'])) {
                 return $next($request);
             }
 
-            // Everyone else sees maintenance page
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'System is currently under maintenance.'], 503);
+                return response()->json([
+                    'message' => 'The Consumable Management System is currently under maintenance.'
+                ], 503);
             }
 
-            $status = SystemStatus::current();
+            $status = SystemStatus::current('cs');
             return response()->view('maintenance', compact('status'), 503);
         }
 

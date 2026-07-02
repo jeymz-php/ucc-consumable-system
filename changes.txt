@@ -10,3 +10,11 @@ July 2, 2026 - Part I
 - Login page, Register page, Forgot Password page implemented
 - Account created from this system can only logged in CS (still need to fix error encountered)
 - Register page updated, removed the generated password in Step 3, instead... receiving the system-generated password in registered email
+
+July 2, 2026 - Part II
+
+- Dashboard page, My Requests page, Items from Consumable IMS datas and page implemented, newer look compared to originated UCC - CS
+- System Status of CS implemented to system of IMS to ensure the system will getting DOWN anytime
+- CS users can now requests and received approved/rejected of requested consumable items
+- Account Settings of CS implemented, with newer UI compared to originated UCC - CS
+- Change password of CS user implemented

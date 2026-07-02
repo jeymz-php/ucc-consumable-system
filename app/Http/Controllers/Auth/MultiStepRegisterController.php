@@ -121,7 +121,6 @@ class MultiStepRegisterController extends Controller
             'phone'         => 'nullable|string|max:20',
         ]);
 
-        // Generate system password from last name
         $generatedPassword = self::generateSystemPassword($request->name);
 
         User::create([
@@ -137,7 +136,6 @@ class MultiStepRegisterController extends Controller
             'is_active'     => true,
         ]);
 
-        // Send system password + pending notice to email
         \Illuminate\Support\Facades\Mail::to($request->email)
             ->send(new \App\Mail\AccountCreatedMail($request->name, $request->email, $generatedPassword));
 
