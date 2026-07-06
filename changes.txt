@@ -18,3 +18,11 @@ July 2, 2026 - Part II
 - CS users can now requests and received approved/rejected of requested consumable items
 - Account Settings of CS implemented, with newer UI compared to originated UCC - CS
 - Change password of CS user implemented
+
+July 6, 2026
+
+- Consumable Receipt Report now available and implemented
+- Version Updates implemented, users of CS can see the latest updates of UCC - CS every logged in
+- Chatbot implemented, can self-request consumable items
+- Messages implements, CS users can create a ticket to talk with the admin regard with the concerns and other questions
+- Account Reactivation fixed, anytime can reactivate the account

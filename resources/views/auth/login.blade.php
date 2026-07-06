@@ -325,6 +325,62 @@
     </div>
 </div>
 
+{{-- REACTIVATION MODAL --}}
+@if(session('show_reactivate_modal'))
+<div style="position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:300;
+            display:flex; align-items:center; justify-content:center; padding:1rem;">
+    <div style="background:#fff; border-radius:16px; padding:2rem;
+                width:100%; max-width:420px;
+                box-shadow:0 24px 64px rgba(0,0,0,0.2);
+                animation:dropIn 0.2s ease;">
+
+        <div style="text-align:center; margin-bottom:1.5rem;">
+            <div style="width:64px; height:64px; border-radius:50%;
+                        background:#f0faf4; border:3px solid #1a6b3a;
+                        display:flex; align-items:center; justify-content:center;
+                        margin:0 auto 1rem; font-size:28px; color:#1a6b3a;">
+                <i class="ti ti-user-check"></i>
+            </div>
+            <div style="font-size:20px; font-weight:700; color:#111; margin-bottom:6px;">
+                Account Deactivated
+            </div>
+            <p style="font-size:13px; color:#666; line-height:1.6;">
+                Your account is currently deactivated. Would you like to reactivate it and continue?
+            </p>
+        </div>
+
+        <div style="display:flex; gap:10px;">
+            <form method="POST" action="{{ route('account.cancel-reactivate') }}" style="flex:1;">
+                @csrf
+                <button type="submit"
+                        style="width:100%; padding:12px; background:#fff; color:#888;
+                               border:1.5px solid #e0e0e0; border-radius:8px;
+                               font-size:14px; font-weight:500; cursor:pointer;
+                               font-family:'Inter',sans-serif; transition:border-color 0.2s;">
+                    Cancel
+                </button>
+            </form>
+            <form method="POST" action="{{ route('account.reactivate') }}" style="flex:1;">
+                @csrf
+                <button type="submit"
+                        style="width:100%; padding:12px; background:#1a6b3a; color:#fff;
+                               border:none; border-radius:8px;
+                               font-size:14px; font-weight:600; cursor:pointer;
+                               font-family:'Inter',sans-serif;
+                               display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <i class="ti ti-user-check"></i> Reactivate
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@keyframes dropIn {
+    from { opacity:0; transform:translateY(-10px); }
+    to   { opacity:1; transform:translateY(0); }
+}
+@endif
+
 <script>
 function togglePassword() {
     const inp  = document.getElementById('password');

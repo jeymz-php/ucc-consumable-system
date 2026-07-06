@@ -14,6 +14,8 @@ use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\AccountSettingsController;
 use App\Http\Controllers\AccountReactivationController;
 use App\Http\Controllers\SystemSettingsController;
+use App\Http\Controllers\ChatbotController;
+use App\Http\Controllers\ConversationController;
 
 // ── Landing ──
 Route::get('/', function () {
@@ -72,6 +74,19 @@ Route::middleware(['auth'])->group(function () {
         return 'Consumption Reports — coming soon';
     })->name('consumables.reports');
 
+    // ── Chatbot (consumable request flow) ──
+    Route::post('/chatbot/message',  [ChatbotController::class, 'message'])->name('chatbot.message');
+    Route::post('/chatbot/confirm',  [ChatbotController::class, 'confirm'])->name('chatbot.confirm');
+    Route::post('/chatbot/reset',       [ChatbotController::class, 'reset'])->name('chatbot.reset');
+
+    // ── Messages / Talk to Admin ──
+    Route::get('/messages',                          [ConversationController::class, 'index'])->name('messages.index');
+    Route::post('/messages',                         [ConversationController::class, 'store'])->name('messages.store');
+    Route::get('/messages/{conversation}',           [ConversationController::class, 'show'])->name('messages.show');
+    Route::post('/messages/{conversation}/reply',    [ConversationController::class, 'reply'])->name('messages.reply');
+    Route::patch('/messages/{conversation}/close',   [ConversationController::class, 'close'])->name('messages.close');
+    Route::get('/messages/poll/{conversation}',      [ConversationController::class, 'poll'])->name('messages.poll');
+
     // ── Notifications (Admin/Super Admin) ──
     Route::get('/notifications',          [NotificationController::class, 'index'])->name('notifications.index');
     Route::get('/notifications/poll',     [NotificationController::class, 'poll'])->name('notifications.poll');
@@ -91,5 +106,17 @@ Route::middleware(['auth'])->group(function () {
 
     // ── System Settings (Super Admin only) ──
     Route::get('/system-settings', [SystemSettingsController::class, 'index'])->name('system.settings');
+
+    Route::post('/settings/updates/dismiss', function () {
+        $latest = \App\Models\SystemUpdate::where(function($q) {
+            $q->where('system', 'cs')->orWhere('system', 'both');
+        })->where('show_modal', true)->latest()->first();
+
+        if ($latest) {
+            session(['update_modal_dismissed_cs' => $latest->version]);
+        }
+
+        return response()->json(['ok' => true]);
+    })->name('system.updates.dismiss');
 
 });

@@ -25,8 +25,8 @@ class LoginController extends Controller
         if (Auth::attempt($this->credentials($request), $request->boolean('remember'))) {
             $user = Auth::user();
 
-            // Block IMS accounts from logging into CS
-            if ($user->source === 'ims') {
+            // Block IMS accounts
+            if (($user->source ?? 'cs') === 'ims') {
                 Auth::logout();
                 return back()->withErrors([
                     'email' => 'This account was created in the Inventory Management System. Please log in there instead.',
@@ -34,18 +34,28 @@ class LoginController extends Controller
             }
 
             // Block pending accounts
-            if ($user->status === 'pending') {
+            if (($user->status ?? 'active') === 'pending') {
                 Auth::logout();
                 return back()->withErrors([
                     'email' => 'Your account is pending approval by an administrator. Check your email for updates.',
                 ])->withInput($request->only('email', 'remember'));
             }
 
-            // Block deactivated accounts
+            // Handle deactivated accounts — store user ID in session BEFORE logging out
             if (!$user->is_active) {
+                $userId = $user->id;
+
+                // Logout first clears session, so we regenerate after
                 Auth::logout();
-                $request->session()->put('pending_reactivation_user_id', $user->id);
-                return redirect()->route('login')->with('show_reactivate_modal', true);
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                // Start fresh session and store the reactivation user ID
+                $request->session()->put('pending_reactivation_user_id', $userId);
+                $request->session()->save();
+
+                return redirect()->route('login')
+                    ->with('show_reactivate_modal', true);
             }
 
             $request->session()->regenerate();

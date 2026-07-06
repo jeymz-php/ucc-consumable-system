@@ -521,6 +521,229 @@
     </div>
 </div>
 
+{{-- ═══ FLOATING CHATBOT ═══ --}}
+<style>
+.chatbot-fab {
+    position: fixed; bottom: 28px; right: 28px; z-index: 400;
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--green-dark); color: #fff; border: none;
+    cursor: pointer; box-shadow: 0 4px 16px rgba(26,107,58,0.4);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; transition: transform 0.2s, background 0.2s;
+}
+.chatbot-fab:hover { background: var(--green-darker); transform: scale(1.08); }
+.chatbot-fab .fab-badge {
+    position: absolute; top: -4px; right: -4px;
+    background: var(--red); color: #fff;
+    font-size: 10px; font-weight: 700;
+    width: 18px; height: 18px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+}
+
+.chatbot-window {
+    position: fixed; bottom: 96px; right: 28px; z-index: 400;
+    width: 360px; height: 540px;
+    background: #fff; border-radius: 16px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.18);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    animation: chatSlideIn 0.25s ease;
+    display: none;
+}
+@keyframes chatSlideIn {
+    from { opacity: 0; transform: translateY(16px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.chatbot-window.open { display: flex; }
+
+.chatbot-header {
+    background: var(--green-dark); color: #fff;
+    padding: 12px 16px; display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+}
+.chatbot-header-icon { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+.chatbot-header-title { font-size: 14px; font-weight: 700; flex: 1; }
+.chatbot-header-sub   { font-size: 11px; color: rgba(255,255,255,0.7); }
+.chatbot-close { background: none; border: none; color: #fff; font-size: 18px; cursor: pointer; padding: 4px; border-radius: 6px; }
+.chatbot-close:hover { background: rgba(255,255,255,0.15); }
+
+.chatbot-messages { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 10px; }
+
+.chat-msg { display: flex; flex-direction: column; }
+.chat-msg.user { align-items: flex-end; }
+.chat-msg.bot  { align-items: flex-start; }
+
+.chat-bubble {
+    max-width: 82%; padding: 9px 12px; border-radius: 12px;
+    font-size: 13px; line-height: 1.55; white-space: pre-wrap; word-break: break-word;
+}
+.chat-bubble.user { background: var(--green-dark); color: #fff; border-radius: 12px 12px 4px 12px; }
+.chat-bubble.bot  { background: #f4f6f4; color: var(--text-primary); border-radius: 12px 12px 12px 4px; border: 1px solid var(--border); }
+.chat-bubble.bot strong { color: var(--green-dark); }
+
+.chat-time { font-size: 10px; color: var(--text-muted); margin-top: 3px; }
+
+.chat-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.chat-action-btn {
+    padding: 6px 12px; border-radius: 20px;
+    border: 1.5px solid var(--green-dark); background: #fff;
+    color: var(--green-dark); font-size: 12px; font-weight: 600;
+    cursor: pointer; font-family: inherit; transition: all 0.15s;
+}
+.chat-action-btn:hover:not(:disabled) { background: var(--green-dark); color: #fff; }
+.chat-action-btn:disabled { border-color: #ccc; color: #ccc; cursor: not-allowed; }
+
+.chat-typing { display: flex; align-items: center; gap: 4px; padding: 8px 12px; background: #f4f6f4; border-radius: 12px; width: fit-content; }
+.chat-typing span { width: 7px; height: 7px; border-radius: 50%; background: #aaa; animation: typingDot 1.2s infinite; }
+.chat-typing span:nth-child(2) { animation-delay: 0.2s; }
+.chat-typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typingDot { 0%,80%,100% { transform: scale(0.8); opacity:0.5; } 40% { transform: scale(1); opacity:1; } }
+
+.chatbot-input-wrap { padding: 10px; border-top: 1px solid var(--border); display: flex; gap: 8px; flex-shrink: 0; background: #fff; }
+.chatbot-input { flex: 1; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 13px; font-family: inherit; outline: none; resize: none; }
+.chatbot-input:focus { border-color: var(--green-dark); }
+.chatbot-send { width: 36px; height: 36px; border-radius: 10px; background: var(--green-dark); color: #fff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; align-self: flex-end; }
+.chatbot-send:hover { background: var(--green-darker); }
+
+@media(max-width:480px) {
+    .chatbot-window { width: calc(100vw - 20px); right: 10px; bottom: 86px; }
+    .chatbot-fab { bottom: 20px; right: 16px; }
+}
+</style>
+
+{{-- FAB Button --}}
+<button class="chatbot-fab" onclick="toggleChatbot()" title="Chat with UCC-CS Assistant" id="chatbot-fab">
+    <i class="ti ti-message-chatbot" id="chatbot-fab-icon"></i>
+</button>
+
+{{-- Chat Window --}}
+<div class="chatbot-window" id="chatbot-window">
+    <div class="chatbot-header">
+        <div class="chatbot-header-icon"><i class="ti ti-robot"></i></div>
+        <div style="flex:1;">
+            <div class="chatbot-header-title">UCC-CS Assistant</div>
+            <div class="chatbot-header-sub">Online • Typically replies instantly</div>
+        </div>
+        <button class="chatbot-close" onclick="toggleChatbot()"><i class="ti ti-x"></i></button>
+    </div>
+
+    <div class="chatbot-messages" id="chatbot-messages"></div>
+
+    <div class="chatbot-input-wrap">
+        <textarea class="chatbot-input" id="chatbot-input" rows="1"
+                  placeholder="Type a message..."
+                  onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage();}"></textarea>
+        <button class="chatbot-send" onclick="sendChatMessage()"><i class="ti ti-send"></i></button>
+    </div>
+</div>
+
+<script>
+const CSRF = document.querySelector('meta[name="csrf-token"]').content;
+let chatOpen     = false;
+let chatStarted  = false;
+
+function toggleChatbot() {
+    chatOpen = !chatOpen;
+    const win  = document.getElementById('chatbot-window');
+    const icon = document.getElementById('chatbot-fab-icon');
+    win.classList.toggle('open', chatOpen);
+    icon.className = chatOpen ? 'ti ti-x' : 'ti ti-message-chatbot';
+
+    if (chatOpen && !chatStarted) {
+        chatStarted = true;
+        sendMessage('__start__', true);
+    }
+    if (chatOpen) scrollChatBottom();
+}
+
+function scrollChatBottom() {
+    const msgs = document.getElementById('chatbot-messages');
+    setTimeout(() => msgs.scrollTop = msgs.scrollHeight, 50);
+}
+
+function appendMessage(body, type, actions, time) {
+    const msgs = document.getElementById('chatbot-messages');
+
+    // Remove typing indicator if present
+    const typing = msgs.querySelector('.chat-typing-wrap');
+    if (typing) typing.remove();
+
+    const wrap = document.createElement('div');
+    wrap.className = `chat-msg ${type === 'user' ? 'user' : 'bot'}`;
+
+    // Parse markdown-lite: **bold**
+    const formatted = body.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+    wrap.innerHTML = `
+        <div class="chat-bubble ${type === 'user' ? 'user' : 'bot'}">${formatted}</div>
+        <div class="chat-time">${time || new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}</div>
+        ${actions && actions.length ? `<div class="chat-actions">${actions.map(a => `
+            <button class="chat-action-btn" ${a.disabled ? 'disabled' : ''}
+                    onclick="${a.url ? `window.open('${a.url}','_blank')` : `sendMessage('${a.value}')`}">
+                ${a.label}
+            </button>`).join('')}</div>` : ''}
+    `;
+    msgs.appendChild(wrap);
+    scrollChatBottom();
+}
+
+function showTyping() {
+    const msgs = document.getElementById('chatbot-messages');
+    const wrap = document.createElement('div');
+    wrap.className = 'chat-msg bot chat-typing-wrap';
+    wrap.innerHTML = `<div class="chat-typing"><span></span><span></span><span></span></div>`;
+    msgs.appendChild(wrap);
+    scrollChatBottom();
+}
+
+async function sendMessage(value, silent) {
+    if (!value) return;
+
+    const input = document.getElementById('chatbot-input');
+
+    if (!silent) {
+        const userText = input.value.trim() || value;
+        // Don't show system values as user messages
+        if (!value.startsWith('__')) {
+            appendMessage(userText, 'user');
+        }
+        input.value = '';
+    }
+
+    showTyping();
+
+    try {
+        const res  = await fetch('{{ route("chatbot.message") }}', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+            body:    JSON.stringify({ message: value }),
+        });
+        const data = await res.json();
+
+        if (data.redirect) {
+            appendMessage(data.response, 'bot');
+            setTimeout(() => window.location.href = data.redirect, 800);
+            return;
+        }
+
+        appendMessage(data.response, 'bot', data.actions);
+    } catch(e) {
+        const typing = document.getElementById('chatbot-messages').querySelector('.chat-typing-wrap');
+        if (typing) typing.remove();
+        appendMessage('Sorry, something went wrong. Please try again.', 'bot');
+    }
+}
+
+function sendChatMessage() {
+    const input = document.getElementById('chatbot-input');
+    const val   = input.value.trim();
+    if (!val) return;
+    sendMessage(val);
+}
+
+// Reset chatbot session on page unload (optional — comment out to persist state)
+// window.addEventListener('beforeunload', () => fetch('{{ route("chatbot.reset") }}', {method:'POST',headers:{'X-CSRF-TOKEN':CSRF}}));
+</script>
+
 <script>
 // ── CLOCK ──
 function updateClock() {

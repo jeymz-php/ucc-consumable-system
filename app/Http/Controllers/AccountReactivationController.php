@@ -14,13 +14,19 @@ class AccountReactivationController extends Controller
 
         if (!$userId) {
             return redirect()->route('login')
-                ->withErrors(['email' => 'Session expired. Please log in again.']);
+                ->withErrors(['email' => 'Session expired. Please log in again to reactivate.']);
         }
 
-        $user = User::findOrFail($userId);
+        $user = User::find($userId);
 
-        // Only reactivate CS accounts from CS system
+        if (!$user) {
+            return redirect()->route('login')
+                ->withErrors(['email' => 'Account not found.']);
+        }
+
+        // Only allow CS accounts
         if (($user->source ?? 'cs') !== 'cs') {
+            $request->session()->forget('pending_reactivation_user_id');
             return redirect()->route('login')
                 ->withErrors(['email' => 'This account does not belong to the Consumable System.']);
         }
