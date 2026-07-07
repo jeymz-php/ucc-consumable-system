@@ -14,7 +14,6 @@ use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\AccountSettingsController;
 use App\Http\Controllers\AccountReactivationController;
 use App\Http\Controllers\SystemSettingsController;
-use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\ConversationController;
 
 // ── Landing ──
@@ -73,11 +72,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/consumables/reports', function () {
         return 'Consumption Reports — coming soon';
     })->name('consumables.reports');
-
-    // ── Chatbot (consumable request flow) ──
-    Route::post('/chatbot/message',  [ChatbotController::class, 'message'])->name('chatbot.message');
-    Route::post('/chatbot/confirm',  [ChatbotController::class, 'confirm'])->name('chatbot.confirm');
-    Route::post('/chatbot/reset',       [ChatbotController::class, 'reset'])->name('chatbot.reset');
 
     // ── Messages / Talk to Admin ──
     Route::get('/messages',                          [ConversationController::class, 'index'])->name('messages.index');

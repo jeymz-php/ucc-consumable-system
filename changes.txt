@@ -26,3 +26,8 @@ July 6, 2026
 - Chatbot implemented, can self-request consumable items
 - Messages implements, CS users can create a ticket to talk with the admin regard with the concerns and other questions
 - Account Reactivation fixed, anytime can reactivate the account
+
+July 7, 2026
+
+- Notifications implemented on topbar, can see the approved, partial, and rejected request consumable item/s
+- Fix minor bugs and UI issues
