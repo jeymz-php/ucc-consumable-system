@@ -32,8 +32,9 @@ July 7, 2026
 - Notifications implemented on topbar, can see the approved, partial, and rejected request consumable item/s
 - Fix minor bugs and UI issues
 
-July 11, 2026 - FINAL DEVELOPMENT as of 6:34pm
+July 11, 2026 - FINAL DEVELOPMENT as of 8:55pm
 
 - Search bar and filtering of Consumable - Browse Item page are fixed
 - Approved and Released Date implemented, seeing in viewing details and reports
 - Critical item stock can now add quantity until it no one left (it will notify to the Admin/Super Admin of IMS)
+- Bubble Notification implemented in welcome page to see the system update after system are UP

@@ -26,7 +26,13 @@ Route::get('/', function () {
             return response()->view('maintenance', compact('status'), 503);
         }
     }
-    return view('welcome');
+
+    $justRestored = null;
+    $status = \App\Models\SystemStatus::current('cs');
+    if ($status && $status->status === 'up' && $status->changed_at && $status->changed_at->gt(now()->subMinutes(10))) {
+        $justRestored = $status;
+    }
+    return view('welcome', compact('justRestored'));
 })->name('home');
 
 // ── Multi-step Registration ──
