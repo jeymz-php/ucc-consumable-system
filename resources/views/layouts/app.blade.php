@@ -552,9 +552,9 @@ document.addEventListener('click', function(e) {
         const dd = document.getElementById('settings-dropdown');
         if (dd) dd.classList.remove('open');
     }
-    const notifBtn = document.querySelector('[onclick*="toggleNotifDropdown"]');
-    const notifDd  = document.getElementById('notif-dropdown');
-    if (notifDd && notifBtn && !notifBtn.contains(e.target) && !notifDd.contains(e.target)) {
+    const notifWrap = document.getElementById('notif-wrap');
+    const notifDd   = document.getElementById('notif-dropdown');
+    if (notifDd && notifWrap && !notifWrap.contains(e.target)) {
         notifDd.classList.remove('open');
     }
 });

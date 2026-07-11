@@ -58,6 +58,9 @@
                 @endif
             </div>
             <div style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">Reviewed by: {{ $req->reviewer->name ?? 'Not yet reviewed' }}</div>
+            <div style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">
+                Approved Date: {{ $req->reviewed_at ? $req->reviewed_at->format('M d, Y h:i A') : '—' }}
+            </div>
             <div class="table-actions">
                 <button class="table-icon-btn view" onclick="viewRequestDetails({{ $req->id }})" title="View Details">
                     <i class="ti ti-eye"></i>
@@ -87,6 +90,7 @@
                     <th>Items</th>
                     <th>Status</th>
                     <th>Reviewed By</th>
+                    <th>Approved Date</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -112,6 +116,14 @@
                         @endif
                     </td>
                     <td style="font-size:12px;">{{ $req->reviewer->name ?? '—' }}</td>
+                    <td style="font-size:11.5px; color:var(--text-muted); white-space:nowrap;">
+                        @if($req->reviewed_at)
+                            {{ $req->reviewed_at->format('M d, Y') }}<br>
+                            <span style="font-size:10.5px;">{{ $req->reviewed_at->format('h:i A') }}</span>
+                        @else
+                            <span style="color:#ccc;">—</span>
+                        @endif
+                    </td>
                     <td>
                         <div class="table-actions">
                             <button class="table-icon-btn view" onclick="viewRequestDetails({{ $req->id }})" title="View Details">
@@ -127,7 +139,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6">
+                    <td colspan="7">
                         <div class="empty-state">
                             <i class="ti ti-clipboard-off"></i>
                             <p>No requests yet. <a href="{{ route('consumables') }}" style="color:var(--green-dark); font-weight:600;">Browse items →</a></p>
@@ -195,6 +207,7 @@ async function viewRequestDetails(id) {
                     <div class="detail-row"><span>Department</span><strong>${req.department}</strong></div>
                     <div class="detail-row"><span>Status</span><strong>${req.status.charAt(0).toUpperCase()+req.status.slice(1)}</strong></div>
                     <div class="detail-row"><span>Reviewed By</span><strong>${req.reviewer?.name ?? 'Pending review'}</strong></div>
+                    <div class="detail-row"><span>Approved Date</span><strong>${req.reviewed_at ? new Date(req.reviewed_at).toLocaleString('en-PH', {year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '—'}</strong></div>
                 </div>
             </div>
             <br>
@@ -202,13 +215,14 @@ async function viewRequestDetails(id) {
                 <div class="detail-section-title"><i class="ti ti-list"></i> Requested Items</div>
                 <div style="overflow-x:auto; margin-top:0.75rem;">
                     <table class="data-table">
-                        <thead><tr><th>Item</th><th>Qty</th><th>Purpose</th><th>Status</th><th>Rejection Reason</th></tr></thead>
+                        <thead><tr><th>Item</th><th>Qty</th><th>Purpose</th><th>Release Date</th><th>Status</th><th>Rejection Reason</th></tr></thead>
                         <tbody>
                             ${req.items.map(i => `
                             <tr>
                                 <td>${i.consumable?.item_name ?? '—'}</td>
                                 <td>${i.quantity} ${i.consumable?.unit ?? ''}</td>
                                 <td style="font-size:12px;">${i.purpose ?? '—'}</td>
+                                <td style="font-size:11.5px;">${i.release_date ? new Date(i.release_date.substring(0,10)+'T00:00:00').toLocaleDateString('en-PH',{year:'numeric',month:'short',day:'numeric'}) : '—'}</td>
                                 <td><span class="chip-badge ${statusClass(i.status)}" style="${statusStyle(i.status)}">${i.status}</span></td>
                                 <td style="font-size:11.5px; color:#888;">${i.rejection_reason ?? '—'}</td>
                             </tr>`).join('')}

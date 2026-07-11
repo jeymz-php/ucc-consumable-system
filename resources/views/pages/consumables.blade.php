@@ -120,7 +120,7 @@
 
         @if(!$isOut)
         <button class="item-card-btn can-request" id="cart-btn-{{ $item->id }}"
-                onclick="addToCart({{ $item->id }}, '{{ addslashes($item->item_name) }}', '{{ $item->unit }}', {{ $item->current_stock }}, '{{ $status }}')">
+            onclick="window.ConsumableCart.addToCart({{ $item->id }}, '{{ addslashes($item->item_name) }}', '{{ $item->unit }}', {{ $item->current_stock }}, '{{ $status }}')">
             <i class="ti ti-shopping-cart-plus"></i> Add to Request
         </button>
         @else
@@ -141,7 +141,7 @@
 </div>
 
 {{-- Floating Cart --}}
-<button class="floating-cart" id="floating-cart" onclick="openCartModal()" style="display:none;">
+<button class="floating-cart" id="floating-cart" onclick="window.ConsumableCart.openCartModal()" style="display:none;">
     <i class="ti ti-shopping-cart"></i>
     <span class="floating-cart-badge" id="cart-badge">0</span>
 </button>
@@ -189,156 +189,467 @@
 
 @endsection
 
+@push('styles')
+<style>
+/* ── Item Card Grid ── */
+.items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.item-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: var(--card-shadow);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.item-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+
+.item-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.item-card-category {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.item-status-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+.item-status-badge.available { background: #f0faf4; color: var(--green-dark); }
+.item-status-badge.low       { background: #fff8f0; color: #ef9f27; }
+.item-status-badge.critical  { background: #fff5f5; color: var(--red); }
+.item-status-badge.out       { background: #f5f5f5; color: #999; }
+
+.item-card-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.3;
+    flex: 1;
+}
+
+.item-card-brand {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.item-card-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 8px 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    margin: 4px 0;
+}
+.item-card-meta-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.item-card-meta-value { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-top: 2px; }
+
+.item-card-btn {
+    width: 100%;
+    padding: 9px;
+    border-radius: 8px;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    transition: opacity 0.18s, background 0.18s;
+    margin-top: auto;
+}
+.item-card-btn.can-request  { background: var(--green-dark); color: #fff; }
+.item-card-btn.can-request:hover { opacity: 0.88; }
+.item-card-btn.in-cart      { background: #f0faf4; color: var(--green-dark); border: 1.5px solid var(--green-dark); }
+.item-card-btn.cannot-request { background: #f5f5f5; color: #aaa; cursor: not-allowed; }
+
+/* ── Floating Cart Button ── */
+.floating-cart {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: var(--green-dark);
+    color: #fff;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.18);
+    z-index: 200;
+    transition: transform 0.18s;
+}
+.floating-cart:hover { transform: scale(1.08); }
+
+.floating-cart-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: var(--red);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ── Cart Modal Rows ── */
+.cart-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+}
+.cart-row:last-child { border-bottom: none; }
+.cart-row-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+
+.cart-qty-input {
+    width: 70px;
+    padding: 6px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    text-align: center;
+    outline: none;
+}
+.cart-qty-input:focus { border-color: var(--green-dark); }
+
+.cart-remove-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    border: none;
+    background: #fff5f5;
+    color: var(--red);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: opacity 0.15s;
+}
+.cart-remove-btn:hover { opacity: 0.75; }
+
+@media (max-width: 600px) {
+    .items-grid { grid-template-columns: 1fr 1fr; }
+    .floating-cart { bottom: 1.25rem; right: 1.25rem; }
+}
+@media (max-width: 400px) {
+    .items-grid { grid-template-columns: 1fr; }
+}
+</style>
+@endpush
+
 @push('scripts')
 <script>
-let cart = {};
-const CART_KEY = 'cs_consumable_cart_{{ auth()->id() }}';
+// Use a unique namespace to avoid conflicts
+window.ConsumableCart = (function() {
+    // Private variables
+    let cart = {};
+    const CART_KEY = 'cs_consumable_cart_{{ auth()->id() }}';
 
-function saveCart()   { localStorage.setItem(CART_KEY, JSON.stringify(cart)); }
-function loadCart()   { try { const s = localStorage.getItem(CART_KEY); if (s) cart = JSON.parse(s) || {}; } catch(e) { cart = {}; } }
-
-function updateCartUI() {
-    saveCart();
-    const count = Object.keys(cart).length;
-    const btn   = document.getElementById('floating-cart');
-    document.getElementById('cart-badge').textContent = count;
-    btn.style.display = count > 0 ? 'flex' : 'none';
-}
-
-function addToCart(id, name, unit, max, status) {
-    if (cart[id]) {
-        if (status !== 'critical' && cart[id].qty < max) cart[id].qty++;
-    } else {
-        cart[id] = { name, unit, max, qty: 1, purpose: '', status };
-    }
-    updateCartUI();
-
-    const btn = document.getElementById(`cart-btn-${id}`);
-    if (btn) {
-        btn.innerHTML = `<i class="ti ti-check"></i> Added!`;
-        btn.classList.remove('can-request');
-        btn.classList.add('in-cart');
-        setTimeout(() => {
-            btn.innerHTML = `<i class="ti ti-shopping-cart-plus"></i> In Cart (${cart[id].qty})`;
-        }, 700);
-    }
-}
-
-function openCartModal() {
-    const list = document.getElementById('cart-items-list');
-    const submitBtn = document.getElementById('cart-submit-btn');
-    const entries = Object.entries(cart);
-
-    if (entries.length === 0) {
-        list.innerHTML = `<div class="empty-state"><i class="ti ti-shopping-cart-off"></i><p>Your cart is empty. Add items from the grid.</p></div>`;
-        submitBtn.disabled = true;
-    } else {
-        submitBtn.disabled = false;
-        list.innerHTML = `
-            <div class="detail-section-title" style="margin-bottom:0.75rem;"><i class="ti ti-list"></i> Requested Items (${entries.length})</div>
-            ${entries.map(([id, item]) => {
-                const locked = item.status === 'critical' || item.status === 'out';
-                return `
-                <div class="cart-row">
-                    <div style="display:flex; align-items:center; gap:10px; width:100%; flex-wrap:wrap;">
-                        <div class="cart-row-name" style="flex:1; min-width:120px;">${item.name}</div>
-                        <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
-                            <input type="number" class="cart-qty-input" min="1" max="${item.max}"
-                                   value="${item.qty}" ${locked ? 'disabled' : ''}
-                                   onchange="updateQty(${id}, this.value)">
-                            <span style="font-size:11.5px; color:#888;">${item.unit}</span>
-                            <button type="button" class="cart-remove-btn" onclick="removeFromCart(${id})" title="Remove">
-                                <i class="ti ti-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                    ${locked ? `<div style="width:100%; font-size:11px; color:#c2410c; margin-top:4px;"><i class="ti ti-lock" style="font-size:11px;"></i> Quantity locked for critical/out-of-stock items.</div>` : ''}
-                    <input type="text" class="modal-input" placeholder="Purpose (e.g. Office use, Lab use...)"
-                           style="width:100%; font-size:12.5px; margin-top:6px;"
-                           value="${item.purpose || ''}"
-                           oninput="cart[${id}].purpose = this.value; syncHiddenInputs();">
-                </div>`;
-            }).join('')}
-        `;
-        syncHiddenInputs();
-    }
-    document.getElementById('cart-modal').classList.add('open');
-}
-
-function updateQty(id, val) {
-    if (!cart[id]) return;
-    val = Math.max(1, Math.min(parseInt(val) || 1, cart[id].max));
-    cart[id].qty = val;
-    updateCartUI();
-    openCartModal();
-}
-
-function removeFromCart(id) {
-    delete cart[id];
-    // Reset button on grid
-    const btn = document.getElementById(`cart-btn-${id}`);
-    if (btn) { btn.innerHTML = '<i class="ti ti-shopping-cart-plus"></i> Add to Request'; btn.className = 'item-card-btn can-request'; }
-    updateCartUI();
-    openCartModal();
-}
-
-function syncHiddenInputs() {
-    document.getElementById('cart-hidden-inputs').innerHTML = Object.entries(cart).map(([id, item], idx) => `
-        <input type="hidden" name="items[${idx}][consumable_id]" value="${id}">
-        <input type="hidden" name="items[${idx}][quantity]"      value="${item.qty}">
-        <input type="hidden" name="items[${idx}][purpose]"       value="${(item.purpose || '').replace(/"/g, '&quot;')}">
-    `).join('');
-}
-
-document.getElementById('cart-form').addEventListener('submit', function() {
-    syncHiddenInputs();
-    // Validate purposes
-    for (const [id, item] of Object.entries(cart)) {
-        if (!item.purpose || !item.purpose.trim()) {
-            alert(`Please enter a purpose for: ${item.name}`);
-            event.preventDefault();
-            openCartModal();
-            return;
+    // Private functions
+    function saveCart() { 
+        try {
+            localStorage.setItem(CART_KEY, JSON.stringify(cart)); 
+        } catch(e) {
+            console.warn('Could not save cart:', e);
         }
     }
-    localStorage.removeItem(CART_KEY);
-});
+    
+    function loadCart() { 
+        try { 
+            const s = localStorage.getItem(CART_KEY); 
+            if (s) cart = JSON.parse(s) || {}; 
+        } catch(e) { 
+            cart = {}; 
+        }
+    }
 
-// Search & filter
-document.getElementById('cs-search').addEventListener('input', filterItems);
-document.querySelectorAll('.cs-stock-pill').forEach(pill => {
-    pill.addEventListener('click', function() {
-        document.querySelectorAll('.cs-stock-pill').forEach(p => p.classList.remove('active'));
-        this.classList.add('active');
+    function updateCartUI() {
+        saveCart();
+        const count = Object.keys(cart).length;
+        const btn = document.getElementById('floating-cart');
+        const badge = document.getElementById('cart-badge');
+        
+        if (btn) {
+            btn.style.display = count > 0 ? 'flex' : 'none';
+        }
+        if (badge) {
+            badge.textContent = count;
+        }
+    }
+
+    // Public functions
+    function addToCart(id, name, unit, max, status) {
+        if (!id) return;
+        
+        if (cart[id]) {
+            if (status !== 'out' && cart[id].qty < max) {
+                cart[id].qty++;
+            }
+        } else {
+            cart[id] = { name, unit, max, qty: 1, purpose: '', status };
+        }
+        updateCartUI();
+
+        const btn = document.getElementById(`cart-btn-${id}`);
+        if (btn) {
+            btn.innerHTML = `<i class="ti ti-check"></i> Added!`;
+            btn.classList.remove('can-request');
+            btn.classList.add('in-cart');
+            setTimeout(() => {
+                btn.innerHTML = `<i class="ti ti-shopping-cart-plus"></i> In Cart (${cart[id].qty})`;
+            }, 700);
+        }
+    }
+
+    function openCartModal() {
+        const list = document.getElementById('cart-items-list');
+        const submitBtn = document.getElementById('cart-submit-btn');
+        const entries = Object.entries(cart);
+
+        if (!list) return;
+
+        if (entries.length === 0) {
+            list.innerHTML = `<div class="empty-state"><i class="ti ti-shopping-cart-off"></i><p>Your cart is empty. Add items from the grid.</p></div>`;
+            if (submitBtn) submitBtn.disabled = true;
+        } else {
+            if (submitBtn) submitBtn.disabled = false;
+            list.innerHTML = `
+                <div class="detail-section-title" style="margin-bottom:0.75rem;"><i class="ti ti-list"></i> Requested Items (${entries.length})</div>
+                ${entries.map(([id, item]) => {
+                    const locked = item.status === 'out';
+                    return `
+                    <div class="cart-row">
+                        <div style="display:flex; align-items:center; gap:10px; width:100%; flex-wrap:wrap;">
+                            <div class="cart-row-name" style="flex:1; min-width:120px;">${item.name}</div>
+                            <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+                                <input type="number" class="cart-qty-input" min="1" max="${item.max}"
+                                       value="${item.qty}" ${locked ? 'disabled' : ''}
+                                       onchange="window.ConsumableCart.updateQty(${id}, this.value)">
+                                <span style="font-size:11.5px; color:#888;">${item.unit}</span>
+                                <button type="button" class="cart-remove-btn" onclick="window.ConsumableCart.removeFromCart(${id})" title="Remove">
+                                    <i class="ti ti-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        ${item.status === 'critical' ? `<div style="width:100%; font-size:11px; color:#c2410c; margin-top:4px;"><i class="ti ti-alert-triangle" style="font-size:11px;"></i> Critical stock — limited quantity available (max ${item.max}).</div>` : ''}
+                        ${locked ? `<div style="width:100%; font-size:11px; color:#c2410c; margin-top:4px;"><i class="ti ti-lock" style="font-size:11px;"></i> Quantity locked for out-of-stock items.</div>` : ''}
+                        <input type="text" class="modal-input" placeholder="Purpose (e.g. Office use, Lab use...)"
+                               style="width:100%; font-size:12.5px; margin-top:6px;"
+                               value="${item.purpose || ''}"
+                               oninput="window.ConsumableCart.updatePurpose(${id}, this.value)">
+                    </div>`;
+                }).join('')}
+            `;
+            syncHiddenInputs();
+        }
+        
+        const modal = document.getElementById('cart-modal');
+        if (modal) modal.classList.add('open');
+    }
+
+    function updateQty(id, val) {
+        if (!cart[id]) return;
+        val = Math.max(1, Math.min(parseInt(val) || 1, cart[id].max));
+        cart[id].qty = val;
+        updateCartUI();
+        openCartModal();
+    }
+
+    function updatePurpose(id, value) {
+        if (cart[id]) {
+            cart[id].purpose = value;
+            syncHiddenInputs();
+        }
+    }
+
+    function removeFromCart(id) {
+        delete cart[id];
+        const btn = document.getElementById(`cart-btn-${id}`);
+        if (btn) { 
+            btn.innerHTML = '<i class="ti ti-shopping-cart-plus"></i> Add to Request'; 
+            btn.className = 'item-card-btn can-request'; 
+        }
+        updateCartUI();
+        openCartModal();
+    }
+
+    function syncHiddenInputs() {
+        const container = document.getElementById('cart-hidden-inputs');
+        if (!container) return;
+        
+        container.innerHTML = Object.entries(cart).map(([id, item], idx) => `
+            <input type="hidden" name="items[${idx}][consumable_id]" value="${id}">
+            <input type="hidden" name="items[${idx}][quantity]" value="${item.qty}">
+            <input type="hidden" name="items[${idx}][purpose]" value="${(item.purpose || '').replace(/"/g, '&quot;')}">
+        `).join('');
+    }
+
+    function filterItems() {
+        const searchEl = document.getElementById('cs-search');
+        const activePill = document.querySelector('.cs-stock-pill.active');
+        
+        if (!searchEl || !activePill) {
+            console.log('Search elements not found');
+            return;
+        }
+
+        const q = searchEl.value.trim().toLowerCase();
+        const active = activePill.dataset.value;
+        let count = 0;
+
+        const cards = document.querySelectorAll('#cs-items-grid .item-card');
+
+        cards.forEach(card => {
+            const name = (card.dataset.name || '').toLowerCase();
+            const brand = (card.dataset.brand || '').toLowerCase();
+            const category = (card.dataset.category || '').toLowerCase();
+            const status = card.dataset.status || '';
+
+            const matchSearch = !q || name.includes(q) || brand.includes(q) || category.includes(q);
+            // "All" never includes out-of-stock items — those only show up
+            // when the "Out of Stock" pill is explicitly selected.
+            const matchFilter = active === 'out'
+                ? status === 'out'
+                : (active === 'all' ? status !== 'out' : status === active);
+
+            const show = matchSearch && matchFilter;
+            card.style.display = show ? '' : 'none';
+            if (show) count++;
+        });
+
+        const noResults = document.getElementById('cs-no-results');
+        if (noResults) {
+            noResults.style.display = count === 0 ? 'block' : 'none';
+        }
+    }
+
+    // Initialize function
+    function init() {
+        loadCart();
+        updateCartUI();
+
+        // Update cart buttons for items already in cart
+        Object.keys(cart).forEach(id => {
+            const btn = document.getElementById(`cart-btn-${id}`);
+            if (btn) {
+                btn.innerHTML = `<i class="ti ti-shopping-cart-plus"></i> In Cart (${cart[id].qty})`;
+                btn.classList.add('in-cart');
+                btn.classList.remove('can-request');
+            }
+        });
+
+        // Setup search
+        const searchEl = document.getElementById('cs-search');
+        if (searchEl) {
+            searchEl.addEventListener('input', filterItems);
+        }
+
+        // Setup filter pills
+        const pillsWrap = document.querySelector('.filter-pills');
+        if (pillsWrap) {
+            pillsWrap.addEventListener('click', function(e) {
+                const pill = e.target.closest('.cs-stock-pill');
+                if (!pill) return;
+                
+                document.querySelectorAll('.cs-stock-pill').forEach(p => p.classList.remove('active'));
+                pill.classList.add('active');
+                filterItems();
+            });
+        }
+
+        // Setup modal close
+        document.querySelectorAll('.modal-overlay').forEach(o => {
+            o.addEventListener('click', function(e) { 
+                if (e.target === this) this.classList.remove('open'); 
+            });
+        });
+
+        // Setup form submit
+        const form = document.getElementById('cart-form');
+        if (form) {
+            form.addEventListener('submit', function(event) {
+                syncHiddenInputs();
+                for (const [id, item] of Object.entries(cart)) {
+                    if (!item.purpose || !item.purpose.trim()) {
+                        alert(`Please enter a purpose for: ${item.name}`);
+                        event.preventDefault();
+                        openCartModal();
+                        return;
+                    }
+                }
+                localStorage.removeItem(CART_KEY);
+            });
+        }
+
+        // Initial filter
         filterItems();
-    });
-});
+    }
 
-function filterItems() {
-    const q      = document.getElementById('cs-search').value.toLowerCase();
-    const active = document.querySelector('.cs-stock-pill.active').dataset.value;
-    let count    = 0;
-    document.querySelectorAll('.item-card').forEach(card => {
-        const matchSearch = !q || card.dataset.name.includes(q) || card.dataset.brand.includes(q) || card.dataset.category.includes(q);
-        const matchFilter = active === 'all' || card.dataset.status === active;
-        const show = matchSearch && matchFilter;
-        card.style.display = show ? 'flex' : 'none';
-        if (show) count++;
+    // Return public API
+    return {
+        addToCart: addToCart,
+        openCartModal: openCartModal,
+        updateQty: updateQty,
+        updatePurpose: updatePurpose,
+        removeFromCart: removeFromCart,
+        init: init,
+        filterItems: filterItems
+    };
+})();
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        window.ConsumableCart.init();
     });
-    document.getElementById('cs-no-results').style.display = count === 0 ? 'block' : 'none';
+} else {
+    window.ConsumableCart.init();
 }
-
-document.querySelectorAll('.modal-overlay').forEach(o => {
-    o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
-});
-
-// Init
-loadCart();
-updateCartUI();
-// Restore in-cart state on card buttons
-Object.keys(cart).forEach(id => {
-    const btn = document.getElementById(`cart-btn-${id}`);
-    if (btn) { btn.innerHTML = `<i class="ti ti-shopping-cart-plus"></i> In Cart (${cart[id].qty})`; btn.classList.add('in-cart'); btn.classList.remove('can-request'); }
-});
 </script>
 @endpush
